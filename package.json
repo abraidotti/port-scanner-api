@@ -10,6 +10,6 @@
   "version": "0.1.0",
   "private": false,
   "dependencies": {
-    "serverless-python-requirements": "^2.4.1"
+    "serverless-python-requirements": "^5.1.0"
   }
 }

@@ -5,7 +5,7 @@ plugins:
 
 custom:
   myStage: ${opt:stage, self:provider.stage}
-  tableNamePrefix: "port-scanner-api-${self:custom.myStage}"
+  tableName: "port-scanner-api-${self:custom.myStage}"
 
 package:
   exclude:
@@ -22,10 +22,11 @@ provider:
   name: aws
   runtime: python3.8
   region: us-east-1
+  stage: main
   apiKeys:
     - PORT-SCANNER-API-KEY
   environment:
-    TABLE_PREFIX: ${self:custom.tableNamePrefix}
+    DYNAMODB_TABLE: ${self:custom.tableName}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -96,7 +97,7 @@ resources:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
       Properties:
-        TableName: ${self:custom.tableNamePrefix}-scans
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
         AttributeDefinitions:
           - AttributeName: user_id
             AttributeType: S

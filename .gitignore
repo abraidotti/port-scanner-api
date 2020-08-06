@@ -102,4 +102,6 @@ ENV/
 .serverless/
 .requirements
 
+node_modules
+.vscode
 notes.sh
