@@ -7,6 +7,7 @@ from scans.scan_model import ScanModel
 
 def create(event, context):
     data = json.loads(event['body'])
+    print(event)
     if 'text' not in data:
         logging.error('Validation Failed')
         return {'statusCode': 422,
