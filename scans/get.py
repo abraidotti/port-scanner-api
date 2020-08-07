@@ -1,17 +1,23 @@
+import os
 import json
 
-from pynamodb.exceptions import DoesNotExist
-from scans.scan_model import ScanModel
+import boto3
+dynamodb = boto3.resource('dynamodb')
 
 
 def get(event, context):
-    try:
-        found_scan = ScanModel.get(
-            hash_key=event['path']['user_id'], range_key=event['path']['scan_id'])
-    except DoesNotExist:
-        return {'statusCode': 404,
-                'body': json.dumps({'error_message': 'scan was not found'})}
+    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 
-    # create a response
-    return {'statusCode': 200,
-            'body': json.dumps(dict(found_scan))}
+    result = table.get_item(
+        Key={
+            'user_id': event['pathParameters']['user_id'],
+            'scan_id': event['pathParameters']['scan_id'],
+        }
+    )
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(result['Item'])
+    }
+
+    return response

@@ -1,12 +1,18 @@
 import json
+import os
 
-from scans.scan_model import ScanModel
+import boto3
+dynamodb = boto3.resource('dynamodb')
 
 
-def scan_list(event, context):
-    # fetch all scans from the database
-    results = ScanModel.scan()
+def list(event, context):
+    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 
-    # create a response
-    return {'statusCode': 200,
-            'body': json.dumps({'items': [dict(result) for result in results]})}
+    result = table.scan()
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(result['Items'])
+    }
+
+    return response

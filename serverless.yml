@@ -1,8 +1,5 @@
 service: port-scanner-api
 
-plugins:
-  - serverless-python-requirements
-
 custom:
   myStage: ${opt:stage, self:provider.stage}
   tableName: "port-scanner-api-${self:custom.myStage}"
@@ -49,7 +46,7 @@ functions:
           cors: true
 
   list:
-    handler: scans/list.scan_list
+    handler: scans/list.list
     events:
       - http:
           path: scans

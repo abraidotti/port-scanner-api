@@ -1,30 +1,42 @@
 import json
 import logging
+import os
+import time
 import uuid
 
-from scans.scan_model import ScanModel
+import boto3
+dynamodb = boto3.resource('dynamodb')
 
 
 def create(event, context):
-    data = json.loads(event['body'])
     print(event)
+    data = json.loads(event['body'])
+    print(data)
     if 'text' not in data:
-        logging.error('Validation Failed')
-        return {'statusCode': 422,
-                'body': json.dumps({'error_message': 'Couldn\'t create the scan item.'})}
+        logging.error("Validation Failed - no text")
+        raise Exception("Couldn't create the scan item.")
 
-    if not data['text']:
-        logging.error('Validation Failed - text was empty. %s', data)
-        return {'statusCode': 422,
-                'body': json.dumps({'error_message': 'Couldn\'t create the scan item. No text.'})}
+    if 'user_id' not in data:
+        logging.error("Validation Failed - no user_id")
+        raise Exception("Couldn't create the scan item.")
 
-    a_scan = ScanModel(user_id=data['user_id'],
-                       scan_id=str(uuid.uuid1()),
-                       text=data['text'])
+    timestamp = str(time.time())
 
-    # write the scan to the database
-    a_scan.save()
+    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 
-    # create a response
-    return {'statusCode': 201,
-            'body': json.dumps(dict(a_scan))}
+    item = {
+        'user_id': data['user_id'],
+        'scan_id': str(uuid.uuid1()),
+        'text': data['text'],
+        'createdAt': timestamp,
+        'updatedAt': timestamp,
+    }
+
+    table.put_item(Item=item)
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(item)
+    }
+
+    return response

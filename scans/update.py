@@ -1,37 +1,42 @@
 import json
+import time
 import logging
+import os
 
-from pynamodb.exceptions import DoesNotExist
-from scans.scan_model import ScanModel
+import boto3
+dynamodb = boto3.resource('dynamodb')
 
 
 def update(event, context):
-    # scan: Figure out why this is behaving differently to the other endpoints
-    # data = json.loads(event['body'])
-    data = event['body']
+    data = json.loads(event['body'])
+    if 'text' not in data or 'checked' not in data:
+        logging.error("Validation Failed")
+        raise Exception("Couldn't update the todo item.")
 
-    if 'text' not in data and 'checked' not in data:
-        logging.error('Validation Failed %s', data)
-        return {'statusCode': 422,
-                'body': json.dumps({'error_message': 'Couldn\'t update the scan item.'})}
+    timestamp = int(time.time() * 1000)
 
-    try:
-        found_scan = ScanModel.get(
-            hash_key=event['path']['user_id'], range_key=event['path']['scan_id'])
-    except DoesNotExist:
-        return {'statusCode': 404,
-                'body': json.dumps({'error_message': 'scan was not found'})}
+    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 
-    scan_changed = False
-    if 'text' in data and data['text'] != found_scan.text:
-        found_scan.text = data['text']
-        scan_changed = True
+    result = table.update_item(
+        Key={
+            'user_id': event['pathParameters']['user_id'],
+            'scan_id': event['pathParameters']['scan_id'],
+        },
+        ExpressionAttributeNames={
+            '#scan_text': 'text',
+        },
+        ExpressionAttributeValues={
+            ':text': data['text'],
+            ':updatedAt': timestamp,
+        },
+        UpdateExpression='SET #scan_text = :text, '
+                         'updatedAt = :updatedAt',
+        ReturnValues='ALL_NEW',
+    )
 
-    if scan_changed:
-        found_scan.save()
-    else:
-        logging.info('Did not update.')
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(result['Attributes'])
+    }
 
-    # create a response
-    return {'statusCode': 200,
-            'body': json.dumps(dict(found_scan))}
+    return response
